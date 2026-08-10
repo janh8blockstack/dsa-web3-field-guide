@@ -1,3 +1,5 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Data Structures of a Blockchain — a field guide</title>
 <style>
   @media (prefers-reduced-motion: reduce) {
@@ -349,9 +351,39 @@
     flex-wrap: wrap;
     gap: 8px;
   }
+  footer.colophon a { color: var(--ink-muted); }
+  footer.colophon a:hover { color: var(--accent-ink); }
+
+  /* ---------- series nav ---------- */
+  .series-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: .02em;
+    color: var(--ink-faint);
+    padding: 0 2px 14px;
+  }
+  .series-nav a { color: var(--ink-muted); text-decoration: none; }
+  .series-nav a:hover { color: var(--accent-ink); }
+  .series-nav ol { list-style: none; display: flex; gap: 4px; flex-wrap: wrap; }
+  .series-nav li { display: flex; align-items: center; gap: 4px; }
+  .series-nav li + li::before { content: "/"; color: var(--rule); margin-right: 4px; }
+  .series-nav .current { color: var(--accent-ink); font-weight: 600; }
 </style>
 
 <div class="sheet">
+
+  <nav class="series-nav" aria-label="Field guide series">
+    <span>Field guide series</span>
+    <ol>
+      <li><span class="current">01 Data structures</span></li>
+      <li><a href="block-structure.html">02 Block anatomy &amp; chain validation →</a></li>
+    </ol>
+  </nav>
 
   <header class="titleblock">
     <p class="tb-eyebrow">Field guide · reference + exercises</p>
@@ -1415,6 +1447,7 @@
 
       <footer class="colophon">
         <span>Field guide · data structures of a blockchain</span>
+        <span><a href="block-structure.html">next: block anatomy &amp; chain validation →</a></span>
         <span>Compiled 2026-08-10</span>
       </footer>
 
