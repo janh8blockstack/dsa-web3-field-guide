@@ -1,0 +1,1423 @@
+<title>Data Structures of a Blockchain — a field guide</title>
+<style>
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+
+  :root {
+    --paper: #eef1f4;
+    --surface: #ffffff;
+    --surface-2: #e7ebef;
+    --ink: #172033;
+    --ink-muted: #566079;
+    --ink-faint: #8894a8;
+    --rule: #d5dbe3;
+    --accent: #af4f0e;
+    --accent-ink: #7a3608;
+    --accent-soft: #f5e2d0;
+    --good: #1f7a54;
+    --good-soft: #dcefe5;
+    --bad: #c33636;
+    --bad-soft: #f8dede;
+    --code-surface: #10151f;
+    --code-ink: #e7ecf3;
+    --code-muted: #8494ab;
+    --code-accent: #e39a55;
+    --code-string: #9fc98a;
+    --shadow: 0 1px 2px rgba(23,32,51,.07), 0 10px 28px -14px rgba(23,32,51,.22);
+
+    --font-display: Georgia, "Iowan Old Style", "Palatino Linotype", ui-serif, serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, ui-sans-serif, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0e131b;
+      --surface: #161d28;
+      --surface-2: #1c2431;
+      --ink: #e8ecf2;
+      --ink-muted: #9fabc0;
+      --ink-faint: #67768d;
+      --rule: #2a3341;
+      --accent: #e2823d;
+      --accent-ink: #f3b67e;
+      --accent-soft: #392a1c;
+      --good: #4fbf8b;
+      --good-soft: #17332a;
+      --bad: #e37272;
+      --bad-soft: #3a1e1e;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.65);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0e131b;
+    --surface: #161d28;
+    --surface-2: #1c2431;
+    --ink: #e8ecf2;
+    --ink-muted: #9fabc0;
+    --ink-faint: #67768d;
+    --rule: #2a3341;
+    --accent: #e2823d;
+    --accent-ink: #f3b67e;
+    --accent-soft: #392a1c;
+    --good: #4fbf8b;
+    --good-soft: #17332a;
+    --bad: #e37272;
+    --bad-soft: #3a1e1e;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.65);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    background-image:
+      linear-gradient(var(--rule) 1px, transparent 1px),
+      linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+    background-size: 28px 28px;
+    background-attachment: local;
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent-ink); }
+  a:focus-visible, button:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 700; text-wrap: balance; color: var(--ink); margin: 0; }
+  p { margin: 0; }
+  ul { margin: 0; padding: 0; }
+
+  /* ---------- shell ---------- */
+  .sheet {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 24px 80px;
+  }
+
+  /* ---------- title block ---------- */
+  .titleblock {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    box-shadow: var(--shadow);
+    border-radius: 2px;
+    padding: 36px 40px 28px;
+    position: relative;
+  }
+  .titleblock::before {
+    content: "";
+    position: absolute;
+    inset: 8px;
+    border: 1px solid var(--rule);
+    pointer-events: none;
+  }
+  .tb-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+  }
+  .titleblock h1 {
+    font-size: clamp(28px, 4vw, 44px);
+    line-height: 1.1;
+    margin-top: 10px;
+    max-width: 16ch;
+  }
+  .tb-sub {
+    font-size: 17px;
+    color: var(--ink-muted);
+    max-width: 62ch;
+    margin-top: 14px;
+  }
+  .tb-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 28px;
+    margin-top: 26px;
+    padding-top: 18px;
+    border-top: 1px solid var(--rule);
+  }
+  .tb-meta div { display: flex; flex-direction: column; gap: 3px; }
+  .tb-meta dt {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .tb-meta dd { margin: 0; font-size: 14px; font-variant-numeric: tabular-nums; }
+
+  /* ---------- layout ---------- */
+  .layout {
+    display: grid;
+    grid-template-columns: 220px minmax(0,1fr);
+    gap: 40px;
+    margin-top: 28px;
+    align-items: start;
+  }
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  .toc {
+    position: sticky;
+    top: 20px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    box-shadow: var(--shadow);
+    padding: 16px 16px 18px;
+  }
+  @media (max-width: 860px) {
+    .toc { position: static; overflow-x: auto; }
+  }
+  .toc-label {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 10px;
+    display: block;
+  }
+  .toc ol { list-style: none; display: flex; flex-direction: column; gap: 2px; counter-reset: toc; }
+  .toc li { counter-increment: toc; }
+  .toc a {
+    display: flex;
+    gap: 8px;
+    text-decoration: none;
+    color: var(--ink-muted);
+    font-size: 13.5px;
+    padding: 5px 6px;
+    border-radius: 3px;
+  }
+  .toc a::before {
+    content: counter(toc, decimal-leading-zero);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+    padding-top: 1px;
+  }
+  .toc a:hover { background: var(--surface-2); color: var(--ink); }
+  .toc .toc-sep { border: none; border-top: 1px solid var(--rule); margin: 10px 0; }
+
+  main { min-width: 0; display: flex; flex-direction: column; gap: 34px; }
+
+  /* ---------- overview table ---------- */
+  .overview {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    box-shadow: var(--shadow);
+    padding: 22px 24px 26px;
+  }
+  .overview h2 { font-size: 20px; }
+  .overview > p { color: var(--ink-muted); font-size: 14.5px; margin-top: 6px; max-width: 66ch; }
+  .table-scroll { overflow-x: auto; margin-top: 16px; }
+  table.spec { width: 100%; border-collapse: collapse; min-width: 640px; font-size: 13.5px; }
+  table.spec th {
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    padding: 8px 14px 8px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  table.spec td {
+    padding: 10px 14px 10px 0;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  table.spec tr:last-child td { border-bottom: none; }
+  table.spec td.struct a { font-weight: 600; text-decoration: none; color: var(--ink); }
+  table.spec td.struct a:hover { color: var(--accent-ink); }
+  table.spec td.usage, table.spec td.study { color: var(--ink-muted); }
+
+  /* ---------- entries ---------- */
+  .entry {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    box-shadow: var(--shadow);
+    padding: 26px 28px 30px;
+    scroll-margin-top: 18px;
+  }
+  .entry-head { display: flex; flex-direction: column; gap: 6px; padding-bottom: 16px; border-bottom: 1px solid var(--rule); margin-bottom: 20px; }
+  .eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent-ink); }
+  .entry-head h2 { font-size: 23px; }
+  .used-for { font-size: 13.5px; color: var(--ink-faint); font-style: italic; }
+
+  .entry-body { display: grid; grid-template-columns: minmax(0,1fr) 250px; gap: 28px; }
+  @media (max-width: 700px) { .entry-body { grid-template-columns: 1fr; } }
+  .prose { display: flex; flex-direction: column; gap: 12px; font-size: 15px; }
+  .prose p { color: var(--ink); }
+  .prose code, .prose strong code { font-family: var(--font-mono); font-size: .88em; background: var(--surface-2); padding: 1px 5px; border-radius: 3px; }
+
+  .study-box {
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    border-radius: 2px;
+    padding: 14px 16px;
+    align-self: start;
+  }
+  .study-label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-ink); margin-bottom: 8px; }
+  .study-box ul { display: flex; flex-direction: column; gap: 7px; list-style: none; }
+  .study-box li { font-size: 13px; color: var(--ink-muted); padding-left: 14px; position: relative; }
+  .study-box li::before { content: "–"; position: absolute; left: 0; color: var(--ink-faint); }
+
+  /* ---------- figures ---------- */
+  figure.fig { margin: 4px 0 0; }
+  .fig-frame {
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 14px 14px 8px;
+    overflow-x: auto;
+  }
+  .fig-frame svg { display: block; width: 100%; height: auto; min-width: 560px; }
+  figure.fig figcaption { font-size: 12.5px; color: var(--ink-faint); margin-top: 8px; max-width: 74ch; }
+  figure.fig figcaption strong { color: var(--ink-muted); font-weight: 600; }
+
+  svg text { font-family: var(--font-mono); }
+  .svg-accent { color: var(--accent); }
+  .svg-good { color: var(--good); }
+  .svg-bad { color: var(--bad); }
+
+  /* ---------- code cards ---------- */
+  .code-card { border: 1px solid var(--rule); border-radius: 3px; overflow: hidden; box-shadow: var(--shadow); }
+  .code-card .tab {
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--rule);
+    padding: 8px 14px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-muted);
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .code-card pre {
+    margin: 0;
+    background: var(--code-surface);
+    color: var(--code-ink);
+    padding: 16px 18px;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 12.6px;
+    line-height: 1.62;
+  }
+  .code-card code .c { color: var(--code-muted); font-style: italic; }
+  .code-card code .k { color: var(--code-accent); }
+  .code-card code .s { color: var(--code-string); }
+
+  /* ---------- exercises ---------- */
+  .exercise { display: flex; flex-direction: column; gap: 12px; }
+  .exercise-head { display: flex; align-items: baseline; gap: 12px; }
+  .exercise-num {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--surface);
+    background: var(--accent);
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+  }
+  .exercise-head h3 { font-size: 17px; }
+  .exercise-proves { font-size: 13.5px; color: var(--ink-muted); margin-left: 38px; }
+  .exercise-proves strong { color: var(--ink); font-weight: 600; }
+
+  footer.colophon {
+    margin-top: 6px;
+    padding-top: 18px;
+    border-top: 1px solid var(--rule);
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+</style>
+
+<div class="sheet">
+
+  <header class="titleblock">
+    <p class="tb-eyebrow">Field guide · reference + exercises</p>
+    <h1>Data structures of a blockchain</h1>
+    <p class="tb-sub">Eleven structures a ledger actually runs on, what each one is doing under the hood in Bitcoin and Ethereum specifically, and five of them small enough to implement yourself before lunch.</p>
+    <dl class="tb-meta">
+      <div><dt>Scope</dt><dd>11 structures, 9 diagrams</dd></div>
+      <div><dt>Exercises</dt><dd>5, ordered by difficulty</dd></div>
+      <div><dt>Revision</dt><dd>2026-08-10</dd></div>
+      <div><dt>Prereqs</dt><dd>hashing, recursion, big-O</dd></div>
+    </dl>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Table of contents">
+      <span class="toc-label">On this page</span>
+      <ol>
+        <li><a href="#hashmap">Hash map</a></li>
+        <li><a href="#linkedlist">Linked list</a></li>
+        <li><a href="#queue">Queue</a></li>
+        <li><a href="#heap">Heap</a></li>
+        <li><a href="#merkle">Merkle tree</a></li>
+        <li><a href="#mpt">Merkle Patricia Trie</a></li>
+        <li><a href="#smt">Sparse Merkle tree</a></li>
+        <li><a href="#bloom">Bloom filter</a></li>
+        <li><a href="#lru">LRU cache</a></li>
+        <li><a href="#log">Append-only log</a></li>
+        <li><a href="#graph">Graph</a></li>
+      </ol>
+      <hr class="toc-sep" />
+      <ol>
+        <li><a href="#exercises">Exercises →</a></li>
+      </ol>
+    </nav>
+
+    <main>
+
+      <!-- ============ OVERVIEW ============ -->
+      <section class="overview" aria-labelledby="overview-h">
+        <h2 id="overview-h">The map</h2>
+        <p>Same eleven structures you'd meet in any DSA course — the only thing web3 changes is which property gets stressed. A hash map here has to survive adversarial keys; a linked list has to make tampering detectable, not just traversal cheap.</p>
+        <div class="table-scroll">
+          <table class="spec">
+            <thead>
+              <tr><th>Structure</th><th>Blockchain usage</th><th>What to study</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="struct"><a href="#hashmap">Hash map</a></td><td class="usage">Account state, UTXO lookup, peer table</td><td class="study">Collisions, avg/worst-case complexity, concurrent access</td></tr>
+              <tr><td class="struct"><a href="#linkedlist">Linked list</a></td><td class="usage">Block-to-block chaining via prevHash</td><td class="study">References, traversal, insertion, limitations</td></tr>
+              <tr><td class="struct"><a href="#queue">Queue</a></td><td class="usage">Mempool intake, message processing</td><td class="study">FIFO, priority queues, bounded queues</td></tr>
+              <tr><td class="struct"><a href="#heap">Heap</a></td><td class="usage">Transaction selection by fee</td><td class="study">Min/max heap, stable ordering, priority updates</td></tr>
+              <tr><td class="struct"><a href="#merkle">Merkle tree</a></td><td class="usage">Transaction commitment</td><td class="study">Root calculation, inclusion proof, verification</td></tr>
+              <tr><td class="struct"><a href="#mpt">Merkle Patricia Trie</a></td><td class="usage">Ethereum world state</td><td class="study">Nibbles, path compression, node encoding</td></tr>
+              <tr><td class="struct"><a href="#smt">Sparse Merkle tree</a></td><td class="usage">State / withdrawal proofs</td><td class="study">Default hashes, membership &amp; non-membership</td></tr>
+              <tr><td class="struct"><a href="#bloom">Bloom filter</a></td><td class="usage">Probabilistic membership checks</td><td class="study">False positives, bit indexes, sizing</td></tr>
+              <tr><td class="struct"><a href="#lru">LRU cache</a></td><td class="usage">Block and state cache</td><td class="study">Eviction, memory limits, concurrency</td></tr>
+              <tr><td class="struct"><a href="#log">Append-only log</a></td><td class="usage">Block storage and WAL</td><td class="study">Crash recovery, checksums, truncation</td></tr>
+              <tr><td class="struct"><a href="#graph">Graph</a></td><td class="usage">Peer-to-peer network</td><td class="study">Connectivity, propagation, partitions</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ 01 HASH MAP ============ -->
+      <section class="entry" id="hashmap">
+        <div class="entry-head">
+          <p class="eyebrow">01 / Hash map</p>
+          <h2>Hash map</h2>
+          <p class="used-for">Account state · UTXO index · Kademlia peer table</p>
+        </div>
+        <div class="entry-body">
+          <div class="prose">
+            <p>An Ethereum account (<code>nonce, balance, storageRoot, codeHash</code>) is conceptually keyed by address in a hash map before it's ever committed into a trie. Bitcoin's <code>chainstate</code> database is a hash index from outpoint (<code>txid:vout</code>) to unspent output, so checking "is this input still spendable" is O(1) instead of a chain scan. Kademlia-style peer tables key node IDs the same way, bucketed by XOR distance.</p>
+            <p>The interesting part isn't the average case — it's the adversarial one. A node's key space is partly attacker-chosen (anyone can pick which address or peer ID to send you), so a hash function with predictable collisions turns your O(1) map into an O(n) one under a targeted flood. That's why clients seed their hash functions randomly at process start rather than using a fixed table.</p>
+          </div>
+          <aside class="study-box">
+            <p class="study-label">What to study</p>
+            <ul>
+              <li>Chaining vs. open addressing</li>
+              <li>Average O(1) vs. adversarial worst-case O(n)</li>
+              <li>Seeded/keyed hashing against collision attacks</li>
+              <li>Read/write concurrency during block application</li>
+            </ul>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ============ 02 LINKED LIST ============ -->
+      <section class="entry" id="linkedlist">
+        <div class="entry-head">
+          <p class="eyebrow">02 / Linked list</p>
+          <h2>Linked list</h2>
+          <p class="used-for">Block-to-block chaining</p>
+        </div>
+        <div class="entry-body">
+          <div class="prose">
+            <p>The name is literal: every block header stores <code>prevHash</code>, the hash of the previous header — a singly linked list, traversed backward from tip to genesis. Appending a new block is O(1). There's no native forward pointer, so full nodes build a separate height→hash index for forward lookups; the chain itself doesn't need one.</p>
+            <p>The property that matters isn't traversal speed, it's tamper evidence: a block's hash is a function of its own contents plus <code>prevHash</code>, so editing anything in block <em>N</em> changes block <em>N</em>'s hash, which no longer matches what block <em>N+1</em> stored as its <code>prevHash</code> — and that mismatch propagates to every block after it. You can't silently splice the middle of the list.</p>
+            <p>One real limitation: it's not doubly linked and it's not even really a single list — it's the canonical path through a tree of blocks. Competing tips (forks) exist simultaneously; nodes pick the heaviest chain and treat the rest as orphaned.</p>
+          </div>
+          <aside class="study-box">
+            <p class="study-label">What to study</p>
+            <ul>
+              <li>prevHash reference, O(1) append</li>
+              <li>Backward-only traversal, no native index</li>
+              <li>Why tampering cascades forward</li>
+              <li>Forks: the "list" is really a tree's longest path</li>
+            </ul>
+          </aside>
+        </div>
+        <figure class="fig">
+          <div class="fig-frame">
+            <svg viewBox="0 0 760 232" role="img" aria-label="Two chains of four blocks each linked by prevHash. In the top, valid chain every block's stored prevHash matches the actual hash of the block before it. In the bottom chain, block 1's data was edited after the fact, so its hash changed; block 2 still stores the old hash, so the link breaks and every block after it is flagged invalid.">
+              <defs>
+                <marker id="ll-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M0,0 L10,5 L0,10 z" fill="currentColor" />
+                </marker>
+              </defs>
+              <text x="4" y="16" font-size="11" letter-spacing=".08em" fill="var(--ink-faint)">VALID CHAIN</text>
+              <g font-size="11">
+                <!-- row 1 valid -->
+                <g transform="translate(20,26)">
+                  <rect width="150" height="64" rx="2" fill="var(--surface)" stroke="currentColor" stroke-opacity=".55"/>
+                  <text x="10" y="20" fill="var(--ink)">B0 · genesis</text>
+                  <text x="10" y="38" fill="var(--ink-faint)">hash h0</text>
+                </g>
+                <g transform="translate(210,26)">
+                  <rect width="150" height="64" rx="2" fill="var(--surface)" stroke="currentColor" stroke-opacity=".55"/>
+                  <text x="10" y="20" fill="var(--ink)">B1</text>
+                  <text x="10" y="38" fill="var(--ink-faint)">prev h0 · hash h1</text>
+                </g>
+                <g transform="translate(400,26)">
+                  <rect width="150" height="64" rx="2" fill="var(--surface)" stroke="currentColor" stroke-opacity=".55"/>
+                  <text x="10" y="20" fill="var(--ink)">B2</text>
+                  <text x="10" y="38" fill="var(--ink-faint)">prev h1 · hash h2</text>
+                </g>
+                <g transform="translate(590,26)">
+                  <rect width="150" height="64" rx="2" fill="var(--surface)" stroke="currentColor" stroke-opacity=".55"/>
+                  <text x="10" y="20" fill="var(--ink)">B3</text>
+                  <text x="10" y="38" fill="var(--ink-faint)">prev h2 · hash h3</text>
+                </g>
+                <line x1="170" y1="58" x2="206" y2="58" stroke="currentColor" stroke-opacity=".6" marker-end="url(#ll-arrow)" />
+                <line x1="360" y1="58" x2="396" y2="58" stroke="currentColor" stroke-opacity=".6" marker-end="url(#ll-arrow)" />
+                <line x1="550" y1="58" x2="586" y2="58" stroke="currentColor" stroke-opacity=".6" marker-end="url(#ll-arrow)" />
+              </g>
+
+              <text x="4" y="128" font-size="11" letter-spacing=".08em" class="svg-bad" fill="var(--bad)">BLOCK 1 EDITED AFTER THE FACT</text>
+              <g font-size="11" transform="translate(0,138)">
+                <g transform="translate(20,0)">
+                  <rect width="150" height="64" rx="2" fill="var(--surface)" stroke="currentColor" stroke-opacity=".55"/>
+                  <text x="10" y="20" fill="var(--ink)">B0 · genesis</text>
+                  <text x="10" y="38" fill="var(--ink-faint)">hash h0</text>
+                </g>
+                <g transform="translate(210,0)">
+                  <rect width="150" height="64" rx="2" fill="var(--bad-soft)" stroke="var(--bad)"/>
+                  <text x="10" y="20" fill="var(--bad)">B1 · data changed</text>
+                  <text x="10" y="38" fill="var(--bad)">prev h0 · hash h1*</text>
+                </g>
+                <g transform="translate(400,0)" opacity=".7">
+                  <rect width="150" height="64" rx="2" fill="var(--surface)" stroke="var(--bad)" stroke-dasharray="3 3"/>
+                  <text x="10" y="20" fill="var(--ink)">B2</text>
+                  <text x="10" y="38" fill="var(--ink-faint)">prev h1 (stale)</text>
+                </g>
+                <g transform="translate(590,0)" opacity=".7">
+                  <rect width="150" height="64" rx="2" fill="var(--surface)" stroke="var(--bad)" stroke-dasharray="3 3"/>
+                  <text x="10" y="20" fill="var(--ink)">B3</text>
+                  <text x="10" y="38" fill="var(--ink-faint)">invalid — cascades</text>
+                </g>
+                <line x1="170" y1="32" x2="206" y2="32" stroke="currentColor" stroke-opacity=".6" marker-end="url(#ll-arrow)" />
+                <line x1="360" y1="32" x2="396" y2="32" stroke="var(--bad)" stroke-dasharray="4 3" marker-end="url(#ll-arrow)" />
+                <text x="330" y="20" fill="var(--bad)" font-size="10">h1* ≠ h1</text>
+                <line x1="550" y1="32" x2="586" y2="32" stroke="var(--bad)" stroke-dasharray="4 3" marker-end="url(#ll-arrow)" />
+              </g>
+            </svg>
+          </div>
+          <figcaption><strong>Tamper evidence, not traversal speed,</strong> is what the linked structure buys you: one edited block breaks its own hash, which breaks the next block's stored reference, which breaks the one after that.</figcaption>
+        </figure>
+      </section>
+
+      <!-- ============ 03 QUEUE ============ -->
+      <section class="entry" id="queue">
+        <div class="entry-head">
+          <p class="eyebrow">03 / Queue</p>
+          <h2>Queue</h2>
+          <p class="used-for">Mempool intake · gossip message processing</p>
+        </div>
+        <div class="entry-body">
+          <div class="prose">
+            <p>Unconfirmed transactions arrive over the p2p network out of order and get buffered in the mempool before anyone decides what to do with them — that buffering is a queue. Network message handling (block/tx/inv gossip) is similarly queued so I/O and validation can run at different paces without one blocking the other.</p>
+            <p>In practice it's rarely pure FIFO: Bitcoin Core's mempool caps itself around 300MB by default and evicts the <em>lowest</em>-feerate entry when full, which is a bounded, priority-ordered queue wearing a queue's clothing. The extraction side of that priority ordering is the heap described next.</p>
+          </div>
+          <aside class="study-box">
+            <p class="study-label">What to study</p>
+            <ul>
+              <li>Strict FIFO vs. feerate-priority variants</li>
+              <li>Bounded capacity + eviction under memory pressure</li>
+              <li>Decoupling network I/O from validation</li>
+            </ul>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ============ 04 HEAP ============ -->
+      <section class="entry" id="heap">
+        <div class="entry-head">
+          <p class="eyebrow">04 / Heap</p>
+          <h2>Heap</h2>
+          <p class="used-for">Transaction selection by fee</p>
+        </div>
+        <div class="entry-body">
+          <div class="prose">
+            <p>Block space is scarce, so a miner or validator wants to fill it with the transactions that pay the most per byte — which is exactly a repeated extract-max over feerate. A binary max-heap gives O(log n) insert and O(log n) extract, so building a block from a mempool of tens of thousands of transactions stays fast.</p>
+            <p>Two details matter more than the average-case textbook version: <strong>stable ordering</strong>, because two transactions at the identical feerate shouldn't get reshuffled nondeterministically between runs (tie-break on arrival sequence); and <strong>priority updates</strong>, because a child-pays-for-parent bump or a replace-by-fee resubmission changes a transaction's priority <em>after</em> it's already in the heap, which needs an efficient decrease/increase-key rather than a full rebuild.</p>
+          </div>
+          <aside class="study-box">
+            <p class="study-label">What to study</p>
+            <ul>
+              <li>Min-heap vs. max-heap array layout</li>
+              <li>Stable tie-breaking on equal keys</li>
+              <li>In-place priority updates (CPFP, RBF)</li>
+            </ul>
+          </aside>
+        </div>
+        <figure class="fig">
+          <div class="fig-frame">
+            <svg viewBox="0 0 760 260" role="img" aria-label="Transactions arrive into a bounded mempool queue; one is dropped because the queue is full. The rest feed a max-heap ordered by fee per byte. Repeated extract-max operations pull the highest-fee transactions out in order to fill a block template.">
+              <defs>
+                <marker id="hp-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M0,0 L10,5 L0,10 z" fill="currentColor" />
+                </marker>
+              </defs>
+              <!-- mempool box -->
+              <g transform="translate(10,70)">
+                <rect width="150" height="110" rx="2" fill="var(--surface)" stroke="currentColor" stroke-opacity=".55"/>
+                <text x="75" y="20" text-anchor="middle" font-size="11" fill="var(--ink-muted)">mempool (bounded)</text>
+                <g font-size="10.5" fill="var(--ink)">
+                  <text x="12" y="42">tx · 8 sat/vB</text>
+                  <text x="12" y="60">tx · 22 sat/vB</text>
+                  <text x="12" y="78">tx · 5 sat/vB</text>
+                  <text x="12" y="96">tx · 14 sat/vB</text>
+                </g>
+              </g>
+              <g transform="translate(10,190)">
+                <rect width="150" height="26" rx="2" fill="var(--bad-soft)" stroke="var(--bad)" stroke-dasharray="3 3"/>
+                <text x="10" y="17" font-size="9.5" fill="var(--bad)" text-decoration="line-through">tx · 1 sat/vB</text>
+                <text x="96" y="17" font-size="9.5" fill="var(--bad)">✕ full</text>
+              </g>
+              <line x1="85" y1="180" x2="85" y2="188" stroke="var(--bad)" stroke-dasharray="2 2"/>
+
+              <line x1="160" y1="120" x2="210" y2="120" stroke="currentColor" stroke-opacity=".6" marker-end="url(#hp-arrow)"/>
+
+              <!-- heap tree -->
+              <g font-size="10.5">
+                <line x1="330" y1="55" x2="280" y2="105" stroke="currentColor" stroke-opacity=".5"/>
+                <line x1="330" y1="55" x2="380" y2="105" stroke="currentColor" stroke-opacity=".5"/>
+                <line x1="280" y1="105" x2="255" y2="155" stroke="currentColor" stroke-opacity=".5"/>
+                <line x1="280" y1="105" x2="305" y2="155" stroke="currentColor" stroke-opacity=".5"/>
+
+                <circle cx="330" cy="55" r="24" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+                <text x="330" y="59" text-anchor="middle" fill="var(--accent-ink)" font-weight="700">22</text>
+
+                <circle cx="280" cy="105" r="22" fill="var(--surface)" stroke="currentColor" stroke-opacity=".55"/>
+                <text x="280" y="109" text-anchor="middle" fill="var(--ink)">14</text>
+                <circle cx="380" cy="105" r="22" fill="var(--surface)" stroke="currentColor" stroke-opacity=".55"/>
+                <text x="380" y="109" text-anchor="middle" fill="var(--ink)">8</text>
+                <circle cx="255" cy="155" r="20" fill="var(--surface)" stroke="currentColor" stroke-opacity=".55"/>
+                <text x="255" y="159" text-anchor="middle" fill="var(--ink)">5</text>
+              </g>
+              <text x="330" y="18" text-anchor="middle" font-size="11" fill="var(--ink-muted)">max-heap by feerate</text>
+
+              <line x1="410" y1="55" x2="470" y2="55" stroke="var(--accent)" marker-end="url(#hp-arrow)"/>
+              <text x="440" y="46" text-anchor="middle" font-size="9.5" fill="var(--accent-ink)">extract-max ×n</text>
+
+              <g transform="translate(480,20)">
+                <rect width="270" height="200" rx="2" fill="var(--surface)" stroke="currentColor" stroke-opacity=".55"/>
+                <text x="135" y="24" text-anchor="middle" font-size="11" fill="var(--ink-muted)">block template</text>
+                <rect x="16" y="38" width="238" height="22" fill="var(--accent-soft)" stroke="var(--accent)"/>
+                <text x="24" y="53" font-size="10" fill="var(--accent-ink)">22 sat/vB</text>
+                <rect x="16" y="64" width="238" height="22" fill="var(--surface-2)" stroke="currentColor" stroke-opacity=".4"/>
+                <text x="24" y="79" font-size="10" fill="var(--ink)">14 sat/vB</text>
+                <rect x="16" y="90" width="238" height="22" fill="var(--surface-2)" stroke="currentColor" stroke-opacity=".4"/>
+                <text x="24" y="105" font-size="10" fill="var(--ink)">8 sat/vB</text>
+                <rect x="16" y="116" width="238" height="22" fill="var(--surface-2)" stroke="currentColor" stroke-opacity=".4"/>
+                <text x="24" y="131" font-size="10" fill="var(--ink)">5 sat/vB</text>
+                <text x="135" y="170" text-anchor="middle" font-size="9.5" fill="var(--ink-faint)">…until block weight limit reached</text>
+              </g>
+            </svg>
+          </div>
+          <figcaption>Highest fee out first, every time — <strong>extract-max</strong> is the whole algorithm; the heap just makes it O(log n) instead of a re-sort per block.</figcaption>
+        </figure>
+      </section>
+
+      <!-- ============ 05 MERKLE TREE ============ -->
+      <section class="entry" id="merkle">
+        <div class="entry-head">
+          <p class="eyebrow">05 / Merkle tree</p>
+          <h2>Merkle tree</h2>
+          <p class="used-for">Transaction commitment</p>
+        </div>
+        <div class="entry-body">
+          <div class="prose">
+            <p>A block header carries one 32-byte Merkle root over every transaction in the block. That single hash lets anyone prove "transaction X is in block Y" with just <code>log₂(n)</code> sibling hashes, instead of shipping every transaction — which is what lets a light client verify inclusion against a header alone.</p>
+            <p>Root calculation pairs and hashes leaves level by level up to a single root. Bitcoin's specific rule for an odd node at any level is to duplicate it and hash it with itself — a shortcut that, combined with a transaction-malleability quirk, produced a real vulnerability (CVE-2012-2459: two different transaction lists could hash to the same root). Worth knowing not as trivia, but because it's the canonical example of an implementation detail in a "simple" structure causing a consensus bug.</p>
+          </div>
+          <aside class="study-box">
+            <p class="study-label">What to study</p>
+            <ul>
+              <li>Level-by-level root calculation</li>
+              <li>Odd-leaf duplication and its edge cases</li>
+              <li>Inclusion-proof construction (the sibling path)</li>
+              <li>Verification by re-hashing up to the root</li>
+            </ul>
+          </aside>
+        </div>
+        <figure class="fig">
+          <div class="fig-frame">
+            <svg viewBox="0 0 760 250" role="img" aria-label="A Merkle tree over eight transaction leaves. Leaf 5 is highlighted along with its authentication path: sibling leaf 4, sibling hash of leaves 6 and 7, and sibling hash of leaves 0 through 3. Re-hashing leaf 5 up through those three siblings reproduces the root, which is the inclusion proof.">
+              <defs>
+                <marker id="mk-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)" />
+                </marker>
+              </defs>
+              <!-- root -->
+              <g font-size="10.5">
+                <rect x="342" y="10" width="76" height="30" rx="2" fill="var(--good-soft)" stroke="var(--good)"/>
+                <text x="380" y="29" text-anchor="middle" fill="var(--good)">root ✓</text>
+
+                <!-- level 2 -->
+                <rect x="200" y="70" width="90" height="28" rx="2" fill="var(--surface)" stroke="currentColor" stroke-opacity=".5"/>
+                <text x="245" y="88" text-anchor="middle" fill="var(--ink-muted)">h0123</text>
+                <rect x="470" y="70" width="90" height="28" rx="2" fill="var(--accent-soft)" stroke="var(--accent)"/>
+                <text x="515" y="88" text-anchor="middle" fill="var(--accent-ink)">h4567</text>
+
+                <!-- level 1 -->
+                <rect x="110" y="130" width="70" height="26" rx="2" fill="var(--surface)" stroke="currentColor" stroke-opacity=".5"/>
+                <text x="145" y="147" text-anchor="middle" fill="var(--ink-muted)" font-size="10">h01</text>
+                <rect x="290" y="130" width="70" height="26" rx="2" fill="var(--surface)" stroke="currentColor" stroke-opacity=".5"/>
+                <text x="325" y="147" text-anchor="middle" fill="var(--ink-muted)" font-size="10">h23</text>
+                <rect x="420" y="130" width="70" height="26" rx="2" fill="var(--accent-soft)" stroke="var(--accent)"/>
+                <text x="455" y="147" text-anchor="middle" fill="var(--accent-ink)" font-size="10">h45</text>
+                <rect x="590" y="130" width="70" height="26" rx="2" fill="var(--accent-soft)" stroke="var(--accent)"/>
+                <text x="625" y="147" text-anchor="middle" fill="var(--accent-ink)" font-size="10">h67</text>
+
+                <!-- leaves -->
+                <g font-size="9.5">
+                  <rect x="30" y="196" width="52" height="30" rx="2" fill="var(--surface)" stroke="currentColor" stroke-opacity=".5"/>
+                  <text x="56" y="215" text-anchor="middle" fill="var(--ink-faint)">L0</text>
+                  <rect x="98" y="196" width="52" height="30" rx="2" fill="var(--surface)" stroke="currentColor" stroke-opacity=".5"/>
+                  <text x="124" y="215" text-anchor="middle" fill="var(--ink-faint)">L1</text>
+                  <rect x="210" y="196" width="52" height="30" rx="2" fill="var(--surface)" stroke="currentColor" stroke-opacity=".5"/>
+                  <text x="236" y="215" text-anchor="middle" fill="var(--ink-faint)">L2</text>
+                  <rect x="278" y="196" width="52" height="30" rx="2" fill="var(--surface)" stroke="currentColor" stroke-opacity=".5"/>
+                  <text x="304" y="215" text-anchor="middle" fill="var(--ink-faint)">L3</text>
+                  <rect x="390" y="196" width="52" height="30" rx="2" fill="var(--accent-soft)" stroke="var(--accent)"/>
+                  <text x="416" y="215" text-anchor="middle" fill="var(--accent-ink)">L4</text>
+                  <rect x="458" y="196" width="52" height="30" rx="2" fill="var(--accent)" stroke="var(--accent)"/>
+                  <text x="484" y="215" text-anchor="middle" fill="var(--surface)">L5 ●</text>
+                  <rect x="570" y="196" width="52" height="30" rx="2" fill="var(--accent-soft)" stroke="var(--accent)"/>
+                  <text x="596" y="215" text-anchor="middle" fill="var(--accent-ink)">L6</text>
+                  <rect x="638" y="196" width="52" height="30" rx="2" fill="var(--accent-soft)" stroke="var(--accent)"/>
+                  <text x="664" y="215" text-anchor="middle" fill="var(--accent-ink)">L7</text>
+                </g>
+
+                <!-- structural lines (muted) -->
+                <g stroke="currentColor" stroke-opacity=".35" fill="none">
+                  <line x1="380" y1="40" x2="245" y2="70"/>
+                  <line x1="380" y1="40" x2="515" y2="70"/>
+                  <line x1="245" y1="98" x2="145" y2="130"/>
+                  <line x1="245" y1="98" x2="325" y2="130"/>
+                  <line x1="515" y1="98" x2="455" y2="130"/>
+                  <line x1="515" y1="98" x2="625" y2="130"/>
+                  <line x1="145" y1="156" x2="56" y2="196"/>
+                  <line x1="145" y1="156" x2="124" y2="196"/>
+                  <line x1="325" y1="156" x2="236" y2="196"/>
+                  <line x1="325" y1="156" x2="304" y2="196"/>
+                  <line x1="625" y1="156" x2="596" y2="196"/>
+                  <line x1="625" y1="156" x2="664" y2="196"/>
+                </g>
+                <!-- proof path (accent, arrowed) -->
+                <g stroke="var(--accent)" fill="none" stroke-width="1.5">
+                  <line x1="484" y1="196" x2="455" y2="156" marker-end="url(#mk-arrow)"/>
+                  <line x1="455" y1="130" x2="515" y2="98" marker-end="url(#mk-arrow)"/>
+                  <line x1="515" y1="70" x2="380" y2="40" marker-end="url(#mk-arrow)"/>
+                </g>
+              </g>
+            </svg>
+          </div>
+          <figcaption>The proof for leaf 5 is just three hashes — <strong>L4, h67, h0123</strong> — re-hashed upward; every other leaf in the block stays unsent.</figcaption>
+        </figure>
+      </section>
+
+      <!-- ============ 06 MPT ============ -->
+      <section class="entry" id="mpt">
+        <div class="entry-head">
+          <p class="eyebrow">06 / Merkle Patricia Trie</p>
+          <h2>Merkle Patricia Trie</h2>
+          <p class="used-for">Ethereum world state, storage, receipts</p>
+        </div>
+        <div class="entry-body">
+          <div class="prose">
+            <p>Ethereum's state isn't a flat list, so a plain Merkle tree doesn't fit — it needs a key-value structure that's still content-addressed. The MPT is a radix-16 trie (one hex nibble per level) keyed by <code>keccak256(address)</code>, built from three node kinds: <strong>leaf</strong> (remaining nibbles + value), <strong>branch</strong> (16-way fan-out), and <strong>extension</strong> (a shared nibble run collapsed into one node so you don't pay for 64 levels of single-child branches).</p>
+            <p>Every node is RLP-encoded and referenced by its own hash, so any subtree — a single account's storage, say — can be proven independently of the rest of the state; that's the mechanism behind <code>eth_getProof</code>. One encoding wrinkle worth knowing: a node under 32 bytes gets embedded inline in its parent rather than stored-and-referenced by hash, which is a real optimization, not an implementation detail you can ignore when hand-rolling one.</p>
+          </div>
+          <aside class="study-box">
+            <p class="study-label">What to study</p>
+            <ul>
+              <li>Hex-prefix encoding (leaf vs. extension, odd/even nibbles)</li>
+              <li>Path compression via extension nodes</li>
+              <li>Branch node's 16 slots + optional value</li>
+              <li>Inline vs. hash-referenced node encoding (32-byte rule)</li>
+            </ul>
+          </aside>
+        </div>
+        <figure class="fig">
+          <div class="fig-frame">
+            <svg viewBox="0 0 760 240" role="img" aria-label="Looking up key a7f39c2 in a Merkle Patricia Trie: an extension node consumes the shared nibbles a7, a branch node consumes the next nibble f and points to one of sixteen children, a second extension node consumes nibbles 3, and a leaf node holds the remaining nibbles 9c2 plus the value. A plain unpacked trie would need seven levels, one per nibble; the MPT needs four nodes total.">
+              <defs>
+                <marker id="mpt-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M0,0 L10,5 L0,10 z" fill="currentColor" />
+                </marker>
+              </defs>
+              <text x="10" y="18" font-size="11" fill="var(--ink-muted)">key = a7 f 3 9c2   (nibbles)</text>
+
+              <g font-size="10.5">
+                <rect x="20" y="34" width="150" height="40" rx="2" fill="var(--surface)" stroke="currentColor" stroke-opacity=".55"/>
+                <text x="95" y="50" text-anchor="middle" fill="var(--ink)">extension</text>
+                <text x="95" y="64" text-anchor="middle" fill="var(--accent-ink)">consumes: a7</text>
+
+                <line x1="95" y1="74" x2="95" y2="98" stroke="currentColor" stroke-opacity=".5" marker-end="url(#mpt-arrow)"/>
+
+                <rect x="10" y="98" width="170" height="66" rx="2" fill="var(--surface)" stroke="currentColor" stroke-opacity=".55"/>
+                <text x="95" y="114" text-anchor="middle" fill="var(--ink)">branch (16-way)</text>
+                <g font-size="9" fill="var(--ink-faint)">
+                  <text x="24" y="132">0</text><text x="40" y="132">1</text><text x="56" y="132">2</text>
+                  <text x="72" y="132" fill="var(--accent-ink)" font-weight="700">f ●</text>
+                  <text x="96" y="132">4</text><text x="112" y="132">…</text><text x="128" y="132">e</text>
+                </g>
+                <text x="95" y="150" text-anchor="middle" fill="var(--ink-faint)" font-size="9">13 empty slots, 1 populated</text>
+
+                <line x1="95" y1="164" x2="95" y2="188" stroke="currentColor" stroke-opacity=".5" marker-end="url(#mpt-arrow)"/>
+
+                <rect x="20" y="188" width="150" height="40" rx="2" fill="var(--surface)" stroke="currentColor" stroke-opacity=".55"/>
+                <text x="95" y="204" text-anchor="middle" fill="var(--ink)">extension</text>
+                <text x="95" y="218" text-anchor="middle" fill="var(--accent-ink)">consumes: 3</text>
+              </g>
+
+              <line x1="170" y1="208" x2="220" y2="208" stroke="currentColor" stroke-opacity=".5" marker-end="url(#mpt-arrow)"/>
+
+              <g font-size="10.5" transform="translate(230,178)">
+                <rect width="180" height="60" rx="2" fill="var(--accent-soft)" stroke="var(--accent)"/>
+                <text x="90" y="24" text-anchor="middle" fill="var(--accent-ink)">leaf</text>
+                <text x="90" y="42" text-anchor="middle" fill="var(--accent-ink)">remaining: 9c2 → value</text>
+              </g>
+
+              <g transform="translate(470,60)">
+                <rect width="270" height="150" rx="2" fill="var(--surface)" stroke="currentColor" stroke-opacity=".4" stroke-dasharray="3 3"/>
+                <text x="16" y="26" font-size="10.5" fill="var(--ink-muted)">without path compression</text>
+                <text x="16" y="44" font-size="10" fill="var(--ink-faint)">7 nibbles → 7 branch levels</text>
+                <g font-size="9.5" fill="var(--ink-faint)">
+                  <text x="16" y="64">a → 7 → f → 3 → 9 → c → 2</text>
+                  <text x="16" y="82">one branch node per hop,</text>
+                  <text x="16" y="98">most with a single child</text>
+                </g>
+                <text x="16" y="128" font-size="11" fill="var(--good)">MPT: 4 nodes total</text>
+                <text x="16" y="144" font-size="10" fill="var(--ink-faint)">extension + branch + extension + leaf</text>
+              </g>
+            </svg>
+          </div>
+          <figcaption>Extension nodes swallow the nibble runs no other key branches on — that's the entire savings over an unpacked radix trie.</figcaption>
+        </figure>
+      </section>
+
+      <!-- ============ 07 SPARSE MERKLE TREE ============ -->
+      <section class="entry" id="smt">
+        <div class="entry-head">
+          <p class="eyebrow">07 / Sparse Merkle tree</p>
+          <h2>Sparse Merkle tree</h2>
+          <p class="used-for">State proofs, L2 withdrawal proofs</p>
+        </div>
+        <div class="entry-body">
+          <div class="prose">
+            <p>A regular Merkle tree only has leaves for the items you inserted. A sparse Merkle tree instead has a fixed depth covering the <em>entire</em> key space — every possible key has a slot, whether or not something's stored there — which is what makes proving <strong>absence</strong> possible, not just presence.</p>
+            <p>The trick that keeps this from being an astronomically large tree in memory: every empty subtree at a given depth hashes to the same, precomputable "default hash" — you never build it, you just know what it would hash to. A membership proof is the usual sibling path to a real leaf; a non-membership proof is a sibling path showing the target key's slot resolves to a default (empty) hash instead of a stored value.</p>
+          </div>
+          <aside class="study-box">
+            <p class="study-label">What to study</p>
+            <ul>
+              <li>Precomputed default hashes per depth</li>
+              <li>Membership vs. non-membership proofs</li>
+              <li>Why fixed depth trades tree size for proof simplicity</li>
+            </ul>
+          </aside>
+        </div>
+        <figure class="fig">
+          <div class="fig-frame">
+            <svg viewBox="0 0 760 190" role="img" aria-label="An eight-slot sparse Merkle tree where only slots 2 and 5 hold real values; every other slot is empty. Because slots 0 and 1 are both empty, their parent hash is a precomputed default hash rather than something that had to be freshly computed, which is what makes proving that key 0 is absent cheap.">
+              <g font-size="10">
+                <!-- leaves 0-7 -->
+                <!-- x positions spaced 88 apart starting 30 -->
+                <g fill="var(--surface)" >
+                  <rect x="30" y="130" width="66" height="30" rx="2" stroke="var(--ink-faint)" stroke-dasharray="2 2"/>
+                  <rect x="118" y="130" width="66" height="30" rx="2" stroke="var(--ink-faint)" stroke-dasharray="2 2"/>
+                  <rect x="206" y="130" width="66" height="30" rx="2" stroke="var(--accent)" fill="var(--accent-soft)"/>
+                  <rect x="294" y="130" width="66" height="30" rx="2" stroke="var(--ink-faint)" stroke-dasharray="2 2"/>
+                  <rect x="382" y="130" width="66" height="30" rx="2" stroke="var(--ink-faint)" stroke-dasharray="2 2"/>
+                  <rect x="470" y="130" width="66" height="30" rx="2" stroke="var(--accent)" fill="var(--accent-soft)"/>
+                  <rect x="558" y="130" width="66" height="30" rx="2" stroke="var(--ink-faint)" stroke-dasharray="2 2"/>
+                  <rect x="646" y="130" width="66" height="30" rx="2" stroke="var(--ink-faint)" stroke-dasharray="2 2"/>
+                </g>
+                <g fill="var(--ink-faint)" text-anchor="middle">
+                  <text x="63" y="149">0 ∅</text>
+                  <text x="151" y="149">1 ∅</text>
+                  <text x="327" y="149">3 ∅</text>
+                  <text x="415" y="149">4 ∅</text>
+                  <text x="591" y="149">6 ∅</text>
+                  <text x="679" y="149">7 ∅</text>
+                </g>
+                <g fill="var(--accent-ink)" text-anchor="middle" font-weight="700">
+                  <text x="239" y="149">2 = v</text>
+                  <text x="503" y="149">5 = v</text>
+                </g>
+
+                <!-- level up: pair(0,1) default, pair(2,3) real, pair(4,5) real, pair(6,7) default -->
+                <rect x="60" y="80" width="96" height="26" rx="2" fill="var(--surface-2)" stroke="var(--ink-faint)"/>
+                <text x="108" y="97" text-anchor="middle" fill="var(--ink-muted)">D1 (default)</text>
+                <rect x="236" y="80" width="96" height="26" rx="2" fill="var(--surface)" stroke="currentColor" stroke-opacity=".5"/>
+                <text x="284" y="97" text-anchor="middle" fill="var(--ink)">h23</text>
+                <rect x="412" y="80" width="96" height="26" rx="2" fill="var(--surface)" stroke="currentColor" stroke-opacity=".5"/>
+                <text x="460" y="97" text-anchor="middle" fill="var(--ink)">h45</text>
+                <rect x="588" y="80" width="96" height="26" rx="2" fill="var(--surface-2)" stroke="var(--ink-faint)"/>
+                <text x="636" y="97" text-anchor="middle" fill="var(--ink-muted)">D1 (default)</text>
+
+                <!-- root -->
+                <rect x="332" y="24" width="96" height="28" rx="2" fill="var(--good-soft)" stroke="var(--good)"/>
+                <text x="380" y="43" text-anchor="middle" fill="var(--good)">root</text>
+
+                <g stroke="currentColor" stroke-opacity=".35" fill="none">
+                  <line x1="63" y1="130" x2="108" y2="106"/>
+                  <line x1="151" y1="130" x2="108" y2="106"/>
+                  <line x1="239" y1="130" x2="284" y2="106"/>
+                  <line x1="327" y1="130" x2="284" y2="106"/>
+                  <line x1="415" y1="130" x2="460" y2="106"/>
+                  <line x1="503" y1="130" x2="460" y2="106"/>
+                  <line x1="591" y1="130" x2="636" y2="106"/>
+                  <line x1="679" y1="130" x2="636" y2="106"/>
+                  <line x1="108" y1="80" x2="380" y2="52"/>
+                  <line x1="284" y1="80" x2="380" y2="52"/>
+                  <line x1="460" y1="80" x2="380" y2="52"/>
+                  <line x1="636" y1="80" x2="380" y2="52"/>
+                </g>
+              </g>
+            </svg>
+          </div>
+          <figcaption><strong>D1 is never computed</strong> — it's a constant known in advance for "two empty leaves," which is what makes a non-membership proof for key 0 just as cheap as a membership proof for key 2.</figcaption>
+        </figure>
+      </section>
+
+      <!-- ============ 08 BLOOM FILTER ============ -->
+      <section class="entry" id="bloom">
+        <div class="entry-head">
+          <p class="eyebrow">08 / Bloom filter</p>
+          <h2>Bloom filter</h2>
+          <p class="used-for">SPV filtering (BIP37) · log/event filtering</p>
+        </div>
+        <div class="entry-body">
+          <div class="prose">
+            <p>A Bloom filter answers "might this be relevant?" in constant space, at the cost of sometimes saying yes when the true answer is no — it never produces a false <em>negative</em>. Light (SPV) clients historically used one to ask a full node "send me anything touching these addresses" without listing every address outright (BIP37 — though the privacy this actually bought turned out to be weaker than intended, which is worth knowing as a cautionary case). Ethereum embeds a 2048-bit bloom in every block header and receipt over log topics/addresses, so <code>eth_getLogs</code> can skip blocks that provably don't match before doing the expensive exact check.</p>
+          </div>
+          <aside class="study-box">
+            <p class="study-label">What to study</p>
+            <ul>
+              <li>False-positive rate vs. bits / hash functions / item count</li>
+              <li>Bit-index computation from multiple hash functions</li>
+              <li>Sizing for a target false-positive rate</li>
+              <li>No false negatives, ever — only "definitely absent" is certain</li>
+            </ul>
+          </aside>
+        </div>
+        <figure class="fig">
+          <div class="fig-frame">
+            <svg viewBox="0 0 760 196" role="img" aria-label="A 16-bit array with three hash functions. Inserting item A sets bits 2, 7 and 11. Inserting item B sets bits 4, 9 and 13. Querying for item C, which was never inserted, hashes to bits 7, 9 and 11 — three arrows land on bits already set by A and B, so the filter reports C as possibly present: a false positive with no way to detect it as one.">
+              <defs>
+                <marker id="bl-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M0,0 L10,5 L0,10 z" fill="var(--bad)" />
+                </marker>
+              </defs>
+              <text x="10" y="10" font-size="11" fill="var(--ink-muted)">bit array (16)</text>
+
+              <text x="408" y="10" font-size="11" font-weight="700" text-anchor="middle" fill="var(--bad)">query: C</text>
+              <g stroke="var(--bad)" stroke-dasharray="3 2" marker-end="url(#bl-arrow)">
+                <line x1="408" y1="14" x2="324" y2="22"/>
+                <line x1="408" y1="14" x2="408" y2="22"/>
+                <line x1="408" y1="14" x2="492" y2="22"/>
+              </g>
+
+              <g font-size="10" text-anchor="middle">
+                <g transform="translate(10,24)"><rect width="40" height="28" fill="var(--surface)" stroke="currentColor" stroke-opacity=".4"/><text x="20" y="18">0</text></g>
+                <g transform="translate(52,24)"><rect width="40" height="28" fill="var(--surface)" stroke="currentColor" stroke-opacity=".4"/><text x="20" y="18">0</text></g>
+                <g transform="translate(94,24)"><rect width="40" height="28" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="20" y="18" fill="var(--accent-ink)">1</text></g>
+                <g transform="translate(136,24)"><rect width="40" height="28" fill="var(--surface)" stroke="currentColor" stroke-opacity=".4"/><text x="20" y="18">0</text></g>
+                <g transform="translate(178,24)"><rect width="40" height="28" fill="var(--surface-2)" stroke="var(--ink-muted)"/><text x="20" y="18">1</text></g>
+                <g transform="translate(220,24)"><rect width="40" height="28" fill="var(--surface)" stroke="currentColor" stroke-opacity=".4"/><text x="20" y="18">0</text></g>
+                <g transform="translate(262,24)"><rect width="40" height="28" fill="var(--surface)" stroke="currentColor" stroke-opacity=".4"/><text x="20" y="18">0</text></g>
+                <g transform="translate(304,24)"><rect width="40" height="28" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="20" y="18" fill="var(--accent-ink)">1</text></g>
+                <g transform="translate(346,24)"><rect width="40" height="28" fill="var(--surface)" stroke="currentColor" stroke-opacity=".4"/><text x="20" y="18">0</text></g>
+                <g transform="translate(388,24)"><rect width="40" height="28" fill="var(--surface-2)" stroke="var(--ink-muted)"/><text x="20" y="18">1</text></g>
+                <g transform="translate(430,24)"><rect width="40" height="28" fill="var(--surface)" stroke="currentColor" stroke-opacity=".4"/><text x="20" y="18">0</text></g>
+                <g transform="translate(472,24)"><rect width="40" height="28" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="20" y="18" fill="var(--accent-ink)">1</text></g>
+                <g transform="translate(514,24)"><rect width="40" height="28" fill="var(--surface)" stroke="currentColor" stroke-opacity=".4"/><text x="20" y="18">0</text></g>
+                <g transform="translate(556,24)"><rect width="40" height="28" fill="var(--surface-2)" stroke="var(--ink-muted)"/><text x="20" y="18">1</text></g>
+                <g transform="translate(598,24)"><rect width="40" height="28" fill="var(--surface)" stroke="currentColor" stroke-opacity=".4"/><text x="20" y="18">0</text></g>
+                <g transform="translate(640,24)"><rect width="40" height="28" fill="var(--surface)" stroke="currentColor" stroke-opacity=".4"/><text x="20" y="18">0</text></g>
+              </g>
+              <g font-size="9" fill="var(--ink-faint)" text-anchor="middle">
+                <text x="30" y="66">0</text><text x="72" y="66">1</text><text x="114" y="66">2</text><text x="156" y="66">3</text>
+                <text x="198" y="66">4</text><text x="240" y="66">5</text><text x="282" y="66">6</text><text x="324" y="66">7</text>
+                <text x="366" y="66">8</text><text x="408" y="66">9</text><text x="450" y="66">10</text><text x="492" y="66">11</text>
+                <text x="534" y="66">12</text><text x="576" y="66">13</text><text x="618" y="66">14</text><text x="660" y="66">15</text>
+              </g>
+
+              <text x="10" y="86" font-size="10" fill="var(--accent-ink)">■ set by A — bits 2, 7, 11</text>
+              <text x="10" y="100" font-size="10" fill="var(--ink-muted)">■ set by B — bits 4, 9, 13</text>
+
+              <g transform="translate(10,112)">
+                <rect width="700" height="66" rx="2" fill="var(--bad-soft)" stroke="var(--bad)" stroke-dasharray="3 3"/>
+                <text x="16" y="26" font-size="11" fill="var(--bad)">C's 3 hashes land on bits 7, 9, 11 — every one already set by A or B</text>
+                <text x="16" y="46" font-size="10.5" fill="var(--bad)">filter reports "possibly present" · false positive, and it cannot tell</text>
+              </g>
+            </svg>
+          </div>
+          <figcaption>C was never inserted, but its three hash positions were already lit up by A and B — the filter can't tell coincidence from membership; it can only rule things <strong>out</strong>, never rule them definitively in.</figcaption>
+        </figure>
+      </section>
+
+      <!-- ============ 09 LRU ============ -->
+      <section class="entry" id="lru">
+        <div class="entry-head">
+          <p class="eyebrow">09 / LRU cache</p>
+          <h2>LRU cache</h2>
+          <p class="used-for">Trie-node cache, block cache</p>
+        </div>
+        <div class="entry-body">
+          <div class="prose">
+            <p>Nodes re-read the same hot state constantly — recently touched accounts, recently requested blocks — so an LRU cache sits in front of the trie/disk to avoid re-hitting storage for the working set. go-ethereum's trie node cache and Bitcoin Core's block/UTXO caches are concrete instances of exactly this.</p>
+            <p>Correct O(1) get/put needs both a hashmap (key → node) <em>and</em> a doubly linked list (recency order) — the hashmap alone can't tell you what's least recently used, and the list alone can't do O(1) lookup. Eviction removes the true tail of the list, not merely the oldest-inserted key, which is the detail that distinguishes LRU from a plain bounded FIFO.</p>
+          </div>
+          <aside class="study-box">
+            <p class="study-label">What to study</p>
+            <ul>
+              <li>Hashmap + doubly linked list combination</li>
+              <li>O(1) get/put, true least-recently-used eviction</li>
+              <li>Hard capacity ceiling — bounded memory is the point</li>
+              <li>Thread-safety when reads race writes</li>
+            </ul>
+          </aside>
+        </div>
+        <figure class="fig">
+          <div class="fig-frame">
+            <svg viewBox="0 0 760 190" role="img" aria-label="An LRU cache with capacity four. Before: most to least recently used order is D, C, B, A. After calling put with a new key E: E becomes most recently used and A, having been least recently used, is evicted to make room.">
+              <defs>
+                <marker id="lru-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M0,0 L10,5 L0,10 z" fill="currentColor" />
+                </marker>
+              </defs>
+              <text x="10" y="16" font-size="11" fill="var(--ink-muted)">before  ·  MRU → LRU</text>
+              <g font-size="10.5" transform="translate(10,26)">
+                <rect width="64" height="34" rx="2" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="32" y="22" text-anchor="middle" fill="var(--accent-ink)">D</text>
+                <rect x="80" width="64" height="34" rx="2" fill="var(--surface)" stroke="currentColor" stroke-opacity=".5"/><text x="112" y="22" text-anchor="middle" fill="var(--ink)">C</text>
+                <rect x="160" width="64" height="34" rx="2" fill="var(--surface)" stroke="currentColor" stroke-opacity=".5"/><text x="192" y="22" text-anchor="middle" fill="var(--ink)">B</text>
+                <rect x="240" width="64" height="34" rx="2" fill="var(--surface-2)" stroke="var(--ink-faint)"/><text x="272" y="22" text-anchor="middle" fill="var(--ink-muted)">A</text>
+                <line x1="64" y1="17" x2="76" y2="17" stroke="currentColor" stroke-opacity=".5" marker-end="url(#lru-arrow)"/>
+                <line x1="144" y1="17" x2="156" y2="17" stroke="currentColor" stroke-opacity=".5" marker-end="url(#lru-arrow)"/>
+                <line x1="224" y1="17" x2="236" y2="17" stroke="currentColor" stroke-opacity=".5" marker-end="url(#lru-arrow)"/>
+                <text x="272" y="52" text-anchor="middle" font-size="9" fill="var(--ink-faint)">least recent</text>
+              </g>
+
+              <g transform="translate(0,84)" font-size="10.5">
+                <rect x="10" width="330" height="34" rx="2" fill="var(--surface)" stroke="currentColor" stroke-opacity=".4" stroke-dasharray="3 3"/>
+                <text x="175" y="21" text-anchor="middle" fill="var(--ink-muted)">put(E) — capacity is 4, already full</text>
+              </g>
+
+              <text x="10" y="146" font-size="11" fill="var(--ink-muted)">after  ·  E inserted, A evicted</text>
+              <g font-size="10.5" transform="translate(10,156)">
+                <rect width="64" height="34" rx="2" fill="var(--accent)" stroke="var(--accent)"/><text x="32" y="22" text-anchor="middle" fill="var(--surface)">E</text>
+                <rect x="80" width="64" height="34" rx="2" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="112" y="22" text-anchor="middle" fill="var(--accent-ink)">D</text>
+                <rect x="160" width="64" height="34" rx="2" fill="var(--surface)" stroke="currentColor" stroke-opacity=".5"/><text x="192" y="22" text-anchor="middle" fill="var(--ink)">C</text>
+                <rect x="240" width="64" height="34" rx="2" fill="var(--surface)" stroke="currentColor" stroke-opacity=".5"/><text x="272" y="22" text-anchor="middle" fill="var(--ink)">B</text>
+                <rect x="330" width="64" height="34" rx="2" fill="var(--bad-soft)" stroke="var(--bad)" stroke-dasharray="3 3" opacity=".8"/><text x="362" y="22" text-anchor="middle" fill="var(--bad)">A ✕</text>
+                <line x1="304" y1="17" x2="326" y2="17" stroke="var(--bad)" stroke-dasharray="3 3" marker-end="url(#lru-arrow)"/>
+                <text x="362" y="52" text-anchor="middle" font-size="9" fill="var(--bad)">evicted + removed from map</text>
+              </g>
+            </svg>
+          </div>
+          <figcaption>Eviction targets the true list tail — whichever key hasn't been touched longest — <strong>not</strong> whichever key happened to be inserted first.</figcaption>
+        </figure>
+      </section>
+
+      <!-- ============ 10 APPEND-ONLY LOG ============ -->
+      <section class="entry" id="log">
+        <div class="entry-head">
+          <p class="eyebrow">10 / Append-only log</p>
+          <h2>Append-only log</h2>
+          <p class="used-for">Block files (blk*.dat) · database WAL</p>
+        </div>
+        <div class="entry-body">
+          <div class="prose">
+            <p>Bitcoin Core stores raw blocks as a sequence of length-prefixed records appended to <code>blk*.dat</code> files; the state databases underneath both clients keep a write-ahead log for the same reason databases always do — sequential appends are fast, and a crash mid-write can only ever corrupt the <em>last</em> record, never anything already flushed before it.</p>
+            <p>That guarantee only holds if every record is individually checksummed. A single file-level checksum can't tell you <em>where</em> corruption starts; a per-record checksum lets you replay from the beginning and stop cleanly at the first bad or truncated record, treating everything before it as a safe, readable prefix — no manual repair needed on restart.</p>
+          </div>
+          <aside class="study-box">
+            <p class="study-label">What to study</p>
+            <ul>
+              <li>Length-prefixed record framing</li>
+              <li>Per-record checksums, not per-file</li>
+              <li>Crash recovery: replay, stop at first bad record</li>
+              <li>Safe truncation of a torn tail write</li>
+            </ul>
+          </aside>
+        </div>
+        <figure class="fig">
+          <div class="fig-frame">
+            <svg viewBox="0 0 760 150" role="img" aria-label="A log file with three complete, checksum-valid records followed by a fourth record that was cut off mid-write by a crash. The recovery process reads sequentially, validates each checksum, and stops right after the third record, treating the truncated fourth record as unrecoverable but harmless.">
+              <defs>
+                <marker id="log-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M0,0 L10,5 L0,10 z" fill="currentColor" />
+                </marker>
+              </defs>
+              <text x="10" y="16" font-size="11" fill="var(--ink-muted)">disk layout — sequential append</text>
+              <g font-size="9.5" transform="translate(10,26)">
+                <g transform="translate(0,0)">
+                  <rect width="170" height="46" fill="var(--surface)" stroke="currentColor" stroke-opacity=".5"/>
+                  <text x="8" y="16" fill="var(--ink-faint)">len | crc</text>
+                  <text x="8" y="34" fill="var(--ink)">record 1 — valid</text>
+                </g>
+                <g transform="translate(180,0)">
+                  <rect width="170" height="46" fill="var(--surface)" stroke="currentColor" stroke-opacity=".5"/>
+                  <text x="8" y="16" fill="var(--ink-faint)">len | crc</text>
+                  <text x="8" y="34" fill="var(--ink)">record 2 — valid</text>
+                </g>
+                <g transform="translate(360,0)">
+                  <rect width="170" height="46" fill="var(--surface)" stroke="currentColor" stroke-opacity=".5"/>
+                  <text x="8" y="16" fill="var(--ink-faint)">len | crc</text>
+                  <text x="8" y="34" fill="var(--ink)">record 3 — valid</text>
+                </g>
+                <g transform="translate(540,0)">
+                  <rect width="170" height="46" fill="var(--bad-soft)" stroke="var(--bad)" stroke-dasharray="3 3"/>
+                  <text x="8" y="16" fill="var(--bad)">len | crc?</text>
+                  <text x="8" y="34" fill="var(--bad)">record 4 — torn write</text>
+                </g>
+              </g>
+
+              <line x1="540" y1="90" x2="540" y2="118" stroke="var(--good)" stroke-width="1.5" marker-end="url(#log-arrow)"/>
+              <text x="546" y="128" font-size="10.5" fill="var(--good)">recovery pointer — replay stops here</text>
+              <text x="10" y="128" font-size="10" fill="var(--ink-faint)">records 1–3 replayed as the safe prefix</text>
+            </svg>
+          </div>
+          <figcaption>A crash mid-append leaves a <strong>torn tail</strong>, never a corrupted middle — checksums let recovery find exactly where the safe prefix ends.</figcaption>
+        </figure>
+      </section>
+
+      <!-- ============ 11 GRAPH ============ -->
+      <section class="entry" id="graph">
+        <div class="entry-head">
+          <p class="eyebrow">11 / Graph</p>
+          <h2>Graph</h2>
+          <p class="used-for">Peer-to-peer overlay network</p>
+        </div>
+        <div class="entry-body">
+          <div class="prose">
+            <p>Each node keeps a bounded set of peer connections — not a full view of the network — and gossips new blocks and transactions to its neighbors, who forward to theirs. The overlay is a graph, not a tree: there's no single propagation root, and multiple paths to the same node are normal (and useful — redundancy is what keeps the network resilient to any one dead peer).</p>
+            <p>What actually gets studied here isn't graph theory in the abstract, it's three concrete failure/success modes: whether the graph stays well-connected as nodes join and leave, how many hops (and how much wall-clock time) it takes for a new block to saturate the network — which is a real input into chain-tip races — and whether any node or cluster can end up <strong>partitioned</strong>, either accidentally or via a deliberate eclipse attack that isolates a victim behind attacker-controlled peers.</p>
+          </div>
+          <aside class="study-box">
+            <p class="study-label">What to study</p>
+            <ul>
+              <li>Bounded peer sets, not full-mesh</li>
+              <li>Gossip/flood propagation, hop count vs. time</li>
+              <li>Connectivity guarantees under churn</li>
+              <li>Partitions and eclipse attacks</li>
+            </ul>
+          </aside>
+        </div>
+        <figure class="fig">
+          <div class="fig-frame">
+            <svg viewBox="0 0 760 230" role="img" aria-label="A gossip network: a block originates at one node and reaches its direct peers at hop one, then their peers at hop two, fading in emphasis with distance. One small cluster of two nodes has no path back to the rest of the graph and is partitioned — it never receives the block.">
+              <g stroke="currentColor" fill="none">
+                <g stroke-opacity=".5">
+                  <line x1="380" y1="110" x2="230" y2="60"/>
+                  <line x1="380" y1="110" x2="470" y2="45"/>
+                  <line x1="380" y1="110" x2="300" y2="170"/>
+                  <line x1="380" y1="110" x2="500" y2="165"/>
+                </g>
+                <g stroke-opacity=".22">
+                  <line x1="230" y1="60" x2="110" y2="40"/>
+                  <line x1="230" y1="60" x2="130" y2="100"/>
+                  <line x1="470" y1="45" x2="600" y2="30"/>
+                  <line x1="470" y1="45" x2="610" y2="80"/>
+                  <line x1="300" y1="170" x2="200" y2="200"/>
+                  <line x1="500" y1="165" x2="620" y2="190"/>
+                  <line x1="500" y1="165" x2="600" y2="140"/>
+                </g>
+              </g>
+
+              <g font-size="10" text-anchor="middle">
+                <circle cx="380" cy="110" r="16" fill="var(--accent)"/>
+                <text x="380" y="114" fill="var(--surface)">origin</text>
+
+                <circle cx="230" cy="60" r="12" fill="var(--accent-soft)" stroke="var(--accent)"/>
+                <circle cx="470" cy="45" r="12" fill="var(--accent-soft)" stroke="var(--accent)"/>
+                <circle cx="300" cy="170" r="12" fill="var(--accent-soft)" stroke="var(--accent)"/>
+                <circle cx="500" cy="165" r="12" fill="var(--accent-soft)" stroke="var(--accent)"/>
+                <text x="230" y="38" fill="var(--ink-faint)" font-size="9.5">hop 1</text>
+
+                <circle cx="110" cy="40" r="10" fill="var(--surface)" stroke="var(--accent)" stroke-opacity=".45"/>
+                <circle cx="130" cy="100" r="10" fill="var(--surface)" stroke="var(--accent)" stroke-opacity=".45"/>
+                <circle cx="600" cy="30" r="10" fill="var(--surface)" stroke="var(--accent)" stroke-opacity=".45"/>
+                <circle cx="610" cy="80" r="10" fill="var(--surface)" stroke="var(--accent)" stroke-opacity=".45"/>
+                <circle cx="200" cy="200" r="10" fill="var(--surface)" stroke="var(--accent)" stroke-opacity=".45"/>
+                <circle cx="600" cy="140" r="10" fill="var(--surface)" stroke="var(--accent)" stroke-opacity=".45"/>
+                <circle cx="620" cy="190" r="10" fill="var(--surface)" stroke="var(--accent)" stroke-opacity=".45"/>
+                <text x="110" y="20" fill="var(--ink-faint)" font-size="9.5">hop 2</text>
+              </g>
+
+              <line x1="668" y1="152" x2="612" y2="143" stroke="var(--bad)" stroke-dasharray="2 4" stroke-opacity=".7"/>
+              <text x="640" y="151" font-size="12" font-weight="700" fill="var(--bad)" text-anchor="middle">✕</text>
+              <text x="645" y="127" font-size="9.5" fill="var(--bad)" text-anchor="middle">no path back</text>
+
+              <g font-size="10" text-anchor="middle">
+                <line x1="660" y1="150" x2="700" y2="170" stroke="currentColor" stroke-opacity=".4"/>
+                <circle cx="660" cy="150" r="10" fill="var(--bad-soft)" stroke="var(--bad)"/>
+                <circle cx="700" cy="170" r="10" fill="var(--bad-soft)" stroke="var(--bad)"/>
+                <text x="680" y="200" fill="var(--bad)" font-size="9.5">partitioned —</text>
+                <text x="680" y="212" fill="var(--bad)" font-size="9.5">never hears it</text>
+              </g>
+            </svg>
+          </div>
+          <figcaption>Redundant edges make the flood robust to any single dropped peer — but a cluster with <strong>zero</strong> edges back to the graph never hears the gossip at all.</figcaption>
+        </figure>
+      </section>
+
+      <!-- ============ EXERCISES ============ -->
+      <section class="overview" id="exercises" aria-labelledby="ex-h">
+        <h2 id="ex-h">Five to implement yourself</h2>
+        <p>Ordered by how much machinery each one drags in. Do them in order — the heap reuses nothing from the Merkle tree, but the log exercise is easiest to get subtly wrong, so it's last on purpose. Reference implementations below are JavaScript for portability; the logic ports directly to any language with a hash function and a byte buffer.</p>
+
+        <div style="display:flex; flex-direction:column; gap:26px; margin-top:22px;">
+
+          <div class="exercise" id="ex1">
+            <div class="exercise-head"><span class="exercise-num">1</span><h3>Hash-linked block list</h3></div>
+            <p class="exercise-proves"><strong>Proves you understand:</strong> why tamper-evidence falls out of hashing, not out of the list structure itself.</p>
+            <div class="code-card">
+              <div class="tab"><span>block-list.js</span><span>build add(), isValid()</span></div>
+              <pre><code><span class="k">class</span> Block {
+  constructor(index, data, previousHash) {
+    <span class="k">this</span>.index = index;
+    <span class="k">this</span>.timestamp = Date.now();
+    <span class="k">this</span>.data = data;
+    <span class="k">this</span>.previousHash = previousHash;
+    <span class="k">this</span>.hash = <span class="k">this</span>.computeHash();
+  }
+  computeHash() {
+    <span class="k">return</span> sha256(`${<span class="k">this</span>.index}${<span class="k">this</span>.timestamp}${JSON.stringify(<span class="k">this</span>.data)}${<span class="k">this</span>.previousHash}`);
+  }
+}
+
+<span class="k">class</span> Chain {
+  constructor() { <span class="k">this</span>.blocks = [<span class="k">this</span>.genesis()]; }
+  genesis() { <span class="k">return new</span> Block(0, <span class="s">"genesis"</span>, <span class="s">"0".repeat(64)</span>); }
+
+  add(data) {
+    <span class="k">const</span> prev = <span class="k">this</span>.blocks.at(-1);
+    <span class="k">const</span> block = <span class="k">new</span> Block(prev.index + 1, data, prev.hash);
+    <span class="k">this</span>.blocks.push(block);
+    <span class="k">return</span> block;
+  }
+
+  <span class="c">// walk the whole chain: does every stored hash match</span>
+  <span class="c">// its own recomputed hash, and its neighbor's prevHash?</span>
+  isValid() {
+    <span class="k">for</span> (<span class="k">let</span> i = 1; i &lt; <span class="k">this</span>.blocks.length; i++) {
+      <span class="k">const</span> cur = <span class="k">this</span>.blocks[i], prev = <span class="k">this</span>.blocks[i - 1];
+      <span class="k">if</span> (cur.previousHash !== prev.hash) <span class="k">return false</span>;
+      <span class="k">if</span> (cur.hash !== cur.computeHash()) <span class="k">return false</span>;
+    }
+    <span class="k">return true</span>;
+  }
+}</code></pre>
+            </div>
+          </div>
+
+          <div class="exercise" id="ex2">
+            <div class="exercise-head"><span class="exercise-num">2</span><h3>Merkle tree with proof generation + verification</h3></div>
+            <p class="exercise-proves"><strong>Proves you understand:</strong> that a proof is nothing more than "the siblings you'd need to recompute the root," and that verification is a one-way replay of the same folding.</p>
+            <div class="code-card">
+              <div class="tab"><span>merkle.js</span><span>root(), proof(), verify()</span></div>
+              <pre><code><span class="k">function</span> merkleRoot(leaves) {
+  <span class="k">let</span> level = leaves.map(sha256);
+  <span class="k">if</span> (level.length === 0) <span class="k">return</span> sha256(<span class="s">""</span>);
+  <span class="k">while</span> (level.length &gt; 1) {
+    <span class="k">const</span> next = [];
+    <span class="k">for</span> (<span class="k">let</span> i = 0; i &lt; level.length; i += 2) {
+      <span class="k">const</span> left = level[i];
+      <span class="k">const</span> right = level[i + 1] ?? left; <span class="c">// odd tail: duplicate</span>
+      next.push(sha256(left + right));
+    }
+    level = next;
+  }
+  <span class="k">return</span> level[0];
+}
+
+<span class="k">function</span> merkleProof(leaves, index) {
+  <span class="k">let</span> level = leaves.map(sha256), idx = index;
+  <span class="k">const</span> proof = [];
+  <span class="k">while</span> (level.length &gt; 1) {
+    <span class="k">const</span> next = [];
+    <span class="k">for</span> (<span class="k">let</span> i = 0; i &lt; level.length; i += 2) {
+      <span class="k">const</span> left = level[i], right = level[i + 1] ?? left;
+      <span class="k">if</span> (i === idx || i + 1 === idx) {
+        <span class="k">const</span> isLeft = idx % 2 === 0;
+        proof.push({ hash: isLeft ? right : left, isLeft: !isLeft });
+      }
+      next.push(sha256(left + right));
+    }
+    idx = Math.floor(idx / 2);
+    level = next;
+  }
+  <span class="k">return</span> proof;
+}
+
+<span class="k">function</span> verifyProof(leaf, proof, root) {
+  <span class="k">let</span> hash = sha256(leaf);
+  <span class="k">for</span> (<span class="k">const</span> step <span class="k">of</span> proof) {
+    hash = step.isLeft ? sha256(step.hash + hash) : sha256(hash + step.hash);
+  }
+  <span class="k">return</span> hash === root;
+}</code></pre>
+            </div>
+          </div>
+
+          <div class="exercise" id="ex3">
+            <div class="exercise-head"><span class="exercise-num">3</span><h3>Fee-prioritized transaction queue</h3></div>
+            <p class="exercise-proves"><strong>Proves you understand:</strong> array-backed binary heaps, and why "highest fee first" needs a tie-break to be deterministic.</p>
+            <div class="code-card">
+              <div class="tab"><span>fee-heap.js</span><span>push(), pop() — max-heap</span></div>
+              <pre><code><span class="k">class</span> FeeHeap {
+  constructor() { <span class="k">this</span>.items = []; <span class="k">this</span>.seq = 0; }
+
+  push(tx) {
+    <span class="k">const</span> node = { tx, fee: tx.fee, seq: <span class="k">this</span>.seq++ };
+    <span class="k">this</span>.items.push(node);
+    <span class="k">this</span>.#bubbleUp(<span class="k">this</span>.items.length - 1);
+  }
+
+  pop() {
+    <span class="k">const</span> top = <span class="k">this</span>.items[0];
+    <span class="k">const</span> last = <span class="k">this</span>.items.pop();
+    <span class="k">if</span> (<span class="k">this</span>.items.length) {
+      <span class="k">this</span>.items[0] = last;
+      <span class="k">this</span>.#bubbleDown(0);
+    }
+    <span class="k">return</span> top?.tx;
+  }
+
+  <span class="c">// higher fee wins; equal fee, earlier arrival wins — stable order</span>
+  #higher(a, b) { <span class="k">return</span> a.fee !== b.fee ? a.fee &gt; b.fee : a.seq &lt; b.seq; }
+
+  #bubbleUp(i) {
+    <span class="k">while</span> (i &gt; 0) {
+      <span class="k">const</span> p = (i - 1) &gt;&gt; 1;
+      <span class="k">if</span> (!<span class="k">this</span>.#higher(<span class="k">this</span>.items[i], <span class="k">this</span>.items[p])) <span class="k">break</span>;
+      [<span class="k">this</span>.items[i], <span class="k">this</span>.items[p]] = [<span class="k">this</span>.items[p], <span class="k">this</span>.items[i]];
+      i = p;
+    }
+  }
+
+  #bubbleDown(i) {
+    <span class="k">const</span> n = <span class="k">this</span>.items.length;
+    <span class="k">while</span> (<span class="k">true</span>) {
+      <span class="k">let</span> best = i; <span class="k">const</span> l = 2 * i + 1, r = 2 * i + 2;
+      <span class="k">if</span> (l &lt; n && <span class="k">this</span>.#higher(<span class="k">this</span>.items[l], <span class="k">this</span>.items[best])) best = l;
+      <span class="k">if</span> (r &lt; n && <span class="k">this</span>.#higher(<span class="k">this</span>.items[r], <span class="k">this</span>.items[best])) best = r;
+      <span class="k">if</span> (best === i) <span class="k">break</span>;
+      [<span class="k">this</span>.items[i], <span class="k">this</span>.items[best]] = [<span class="k">this</span>.items[best], <span class="k">this</span>.items[i]];
+      i = best;
+    }
+  }
+}</code></pre>
+            </div>
+          </div>
+
+          <div class="exercise" id="ex4">
+            <div class="exercise-head"><span class="exercise-num">4</span><h3>LRU cache with strict capacity</h3></div>
+            <p class="exercise-proves"><strong>Proves you understand:</strong> that O(1) recency tracking needs order-preserving storage, not just a lookup table — <code>Map</code>'s insertion order does the linked-list job for free in JS.</p>
+            <div class="code-card">
+              <div class="tab"><span>lru.js</span><span>get(), put() — O(1)</span></div>
+              <pre><code><span class="k">class</span> LRUCache {
+  constructor(capacity) {
+    <span class="k">this</span>.capacity = capacity;
+    <span class="k">this</span>.map = <span class="k">new</span> Map(); <span class="c">// Map preserves insertion order</span>
+  }
+
+  get(key) {
+    <span class="k">if</span> (!<span class="k">this</span>.map.has(key)) <span class="k">return</span> <span class="k">undefined</span>;
+    <span class="k">const</span> value = <span class="k">this</span>.map.get(key);
+    <span class="k">this</span>.map.delete(key);
+    <span class="k">this</span>.map.set(key, value); <span class="c">// re-insert = mark most recently used</span>
+    <span class="k">return</span> value;
+  }
+
+  put(key, value) {
+    <span class="k">if</span> (<span class="k">this</span>.map.has(key)) {
+      <span class="k">this</span>.map.delete(key);
+    } <span class="k">else if</span> (<span class="k">this</span>.map.size &gt;= <span class="k">this</span>.capacity) {
+      <span class="k">const</span> oldest = <span class="k">this</span>.map.keys().next().value; <span class="c">// true LRU: map head</span>
+      <span class="k">this</span>.map.delete(oldest);
+    }
+    <span class="k">this</span>.map.set(key, value);
+  }
+}</code></pre>
+            </div>
+          </div>
+
+          <div class="exercise" id="ex5">
+            <div class="exercise-head"><span class="exercise-num">5</span><h3>Append-only block file with checksums + partial-write recovery</h3></div>
+            <p class="exercise-proves"><strong>Proves you understand:</strong> why per-record framing, not per-file, is what makes crash recovery a read loop instead of a repair tool.</p>
+            <div class="code-card">
+              <div class="tab"><span>append-log.js</span><span>appendRecord(), readValidRecords()</span></div>
+              <pre><code><span class="c">// record layout: [4-byte length][4-byte crc32][payload]</span>
+
+<span class="k">function</span> appendRecord(fd, payload) {
+  <span class="k">const</span> header = Buffer.alloc(8);
+  header.writeUInt32BE(payload.length, 0);
+  header.writeUInt32BE(crc32(payload), 4);
+  fs.appendFileSync(fd, Buffer.concat([header, payload]));
+}
+
+<span class="k">function</span> readValidRecords(fd) {
+  <span class="k">const</span> buf = fs.readFileSync(fd);
+  <span class="k">const</span> records = [];
+  <span class="k">let</span> offset = 0;
+
+  <span class="k">while</span> (offset + 8 &lt;= buf.length) {
+    <span class="k">const</span> length = buf.readUInt32BE(offset);
+    <span class="k">const</span> crcStored = buf.readUInt32BE(offset + 4);
+    <span class="k">const</span> start = offset + 8, end = start + length;
+
+    <span class="k">if</span> (end &gt; buf.length) <span class="k">break</span>; <span class="c">// torn tail write — stop, don't throw</span>
+    <span class="k">const</span> payload = buf.subarray(start, end);
+    <span class="k">if</span> (crc32(payload) !== crcStored) <span class="k">break</span>; <span class="c">// corrupt record — stop here too</span>
+
+    records.push(payload);
+    offset = end; <span class="c">// this is the safe recovery/truncation point</span>
+  }
+  <span class="k">return</span> { records, safeLength: offset };
+}</code></pre>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <footer class="colophon">
+        <span>Field guide · data structures of a blockchain</span>
+        <span>Compiled 2026-08-10</span>
+      </footer>
+
+    </main>
+  </div>
+</div>
